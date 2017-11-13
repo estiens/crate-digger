@@ -113,7 +113,7 @@ update msg model =
 searchForRecs : String -> Dict String Float -> Cmd Msg
 searchForRecs id options =
     let
-      base_url = "http://localhost:3000/api/v1/recommendations"
+      base_url = "/api/v1/recommendations"
       optionsDict = Dict.map (\key value -> toString(value)) options
       options_array = Dict.toList optionsDict 
       query_params = options_array ++ [("id", id)]
@@ -126,7 +126,7 @@ searchForRecs id options =
 searchForTracks : String -> Cmd Msg
 searchForTracks query =
     let
-      url = "http://localhost:3000/api/v1/track_search?query=" ++ query
+      url = "/api/v1/track_search?query=" ++ query
     in
       Decode.list trackDecoder
         |> Http.get url
