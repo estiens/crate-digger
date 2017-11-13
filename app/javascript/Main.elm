@@ -1,18 +1,20 @@
 import Html exposing (..)
 import Html.Attributes exposing (..)
-import Html.Events exposing (..)
 import Http
+import Html.Events exposing (..)
+import Html.Events.Extra as Extra
 import HttpBuilder exposing (..)
 import Json.Decode as Decode exposing (Decoder, field, at)
+import Time
 
 import Material
 import Material.Slider as Slider
 import Material.Progress as Loading
 import Material.Card as Card
 import Material.Options as Options exposing (cs, css)
-import Material.Color as Color
 import Material.Elevation as Elevation
 import Material.Button as Button
+import Material.Typography as Typo
 
 import Dict exposing (Dict)
 
@@ -41,6 +43,7 @@ type alias Track =
 type alias Model =
   { query : String
   , tracks : List Track
+  , oldTracks : List Track
   , recommendations: List Track
   , selectedTrack : List Track
   , showOptions : Bool
@@ -54,6 +57,7 @@ initialModel : Model
 initialModel =
     { query = "",
       tracks = [],
+      oldTracks = [],
       recommendations = [],
       selectedTrack = [],
       showOptions = False,
@@ -75,6 +79,7 @@ type Msg
   | ResetOptions
   | FilterSearch
   | UpdateQuery String
+  | BackSearch
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -87,6 +92,8 @@ update msg model =
         ( { model | options = newOptions }, Cmd.none )
     UpdateQuery string ->
       ( { model | query = string }, Cmd.none )
+    BackSearch ->
+      ( { model | selectedTrack = [], showOptions = False, tracks = model.oldTracks, recommendations = [] }, Cmd.none )
     Search ->
       ( { model | selectedTrack = [], tracks = [], recommendations = [], tracksLoading = True, showOptions = False, options = Dict.empty }, searchForTracks model.query)
     FilterSearch ->
@@ -104,7 +111,7 @@ update msg model =
       in
         (model, Cmd.none)
     GetRecommendations track ->
-      ( { model | recsLoading = True, tracks = [], recommendations = [], selectedTrack = [track] }, searchForRecs track.spotifyId model.options )
+      ( { model | recsLoading = True, oldTracks = model.tracks, tracks = [], recommendations = [], selectedTrack = [track] }, searchForRecs track.spotifyId model.options )
     NewRecommendations (Ok newRecs) ->
       ( { model | recsLoading = False, showOptions = True, recommendations = newRecs }, Cmd.none )
     NewRecommendations (Err error) ->
@@ -127,6 +134,7 @@ searchForRecs id options =
     in
       HttpBuilder.get base_url
         |> withQueryParams query_params
+        |> withTimeout (10 * Time.second)
         |> withExpect (Http.expectJson tracksDecoder)
         |> send NewRecommendations
 
@@ -135,9 +143,10 @@ searchForTracks query =
     let
       url = "/api/v1/track_search?limit=4&query=" ++ query
     in
-      Decode.list trackDecoder
-        |> Http.get url
-        |> Http.send NewTracks
+      HttpBuilder.get url
+        |> withTimeout (10 * Time.second)
+        |> withExpect (Http.expectJson tracksDecoder)
+        |> send NewTracks
 
 -- VIEW
 
@@ -145,9 +154,17 @@ type alias Mdl = Material.Model
 
 selectedTrack : Track -> Html Msg 
 selectedTrack track = 
-  div [] [
-    h2 [] [text("Selected Track: " ++ track.title ++ " by " ++ track.artist)]
-  ]
+  let 
+    trackString = "Selected Track: " ++ track.title ++ " by " ++ track.artist
+  in
+    div [class "selected-track-box"] [
+      case track.imageUrl of 
+        Nothing -> img [] []
+        Just val -> img [src (val)] []
+      , Options.styled Html.h4
+      [ Typo.title, Typo.right ]
+      [ text trackString ]
+    ]
 
 showSelectedTrack : Model -> Html Msg 
 showSelectedTrack model =
@@ -184,8 +201,7 @@ trackBox track =
       in
       div  [ class "trackbox"] [
         Card.view 
-          [Color.background (Color.color Color.Green Color.S500)
-          , Options.onClick(GetRecommendations track)] 
+          [ Options.onClick(GetRecommendations track) ] 
           [
             Card.media [  css "background" backgroundUrl
                         , css "height" "200px"] []
@@ -202,7 +218,9 @@ viewTracks : String -> List Track -> Html Msg
 viewTracks header tracks =
     div [hidden (List.isEmpty tracks)] [ 
       br [] []
-      , h1 [] [text header]
+      , Options.styled Html.h2
+        [ Typo.display2 ]
+        [ text header ]
       , div [class "cards"] (List.map trackBox tracks)
     ]
 
@@ -239,9 +257,17 @@ showKey maybefloat =
 
 showSlider: Float -> Float -> Float -> Float -> String -> String -> Model -> Html Msg
 showSlider min_slider max_slider default_slider step attribute label model =
-  div [class "slider"] [
-        createSlider min_slider max_slider default_slider step attribute model,
-        p [] [text(label ++ ": " ++ sliderValue(Dict.get attribute model.options))]
+  let 
+    displayValue = case attribute of
+      "target_key" -> showKey(Dict.get attribute model.options)
+      _ -> sliderValue(Dict.get attribute model.options)
+    opacity = case Dict.get attribute model.options of 
+      Nothing -> "0.5" 
+      Just val -> "1.0"
+  in 
+    div [class "slider", style [ ("opacity", opacity) ]] [
+          createSlider min_slider max_slider default_slider step attribute model,
+          p [] [text(label ++ ": " ++ displayValue)]
         ]
     
 trackOptions: Model -> Html Msg
@@ -249,6 +275,9 @@ trackOptions model =
   Options.div[ Elevation.e4, Options.center ] [
     div [hidden (not model.showOptions)] [
       div [class "sliders"] [
+        Options.styled p
+          [ Typo.display1, Typo.center ]
+          [ text "Select You Some Magic Filters" ],
         showSlider 0 1 0.5 0.1 "target_acousticness" "target acousticness" model,
         showSlider 0 1 0.5 0.1 "target_energy" "target energy" model,
         showSlider 0 1 0.5 0.1 "target_instrumentalness" "instrumentalness" model,
@@ -261,10 +290,7 @@ trackOptions model =
         showSlider 0 200 140 1 "max_tempo" "max tempo (BPM)" model,
         showSlider 0 1 0.5 0.1 "min_valence" "min valence 0-sad, 1-happy)" model,
         showSlider 0 1 0.5 0.1 "max_valence" "max valence (0-sad, 1-happy)" model,
-        div [class "slider"] [
-            createSlider -1 11 -1 1 "target_key" model,
-            p [] [text("key" ++ ": " ++ showKey(Dict.get "target_key" model.options))]
-        ],
+        showSlider -1 11 -1 1 "target_key" "key" model,
       Button.render Mdl [0] model.mdl
         [ Button.raised
         , Button.colored
@@ -286,14 +312,23 @@ showLoader model =
 
 mainContent: Model -> Html Msg
 mainContent model =
-  div [] [ div [class "search-bar"] [
-    input [ placeholder "Search For Tracks", onInput UpdateQuery ] []
-    , button [onClick Search] [text "Search Tracks"]
+  div [] [ 
+    div [class "search-bar", hidden(not (List.isEmpty model.selectedTrack))] [
+    input [ class "search-input", placeholder "Search For Tracks", onInput UpdateQuery, Extra.onEnter Search ] []
+    , Button.render Mdl [0] model.mdl
+        [ Button.raised
+        , Button.colored
+        , Options.onClick Search
+      ]
+      [ text "Search Tracks" ]
   ]
-  , div [class "selected-track"] [ showSelectedTrack model ]
+  , div [class "selected-track", hidden(List.isEmpty model.selectedTrack)] [ showSelectedTrack model ]
   , div [class "track-list"] [
     if model.tracksLoading == True then
-      showLoader model
+      div [] [
+        p [] [text "Searching For Your Track"]
+        , showLoader model
+      ]
     else
       viewTracks "Track List" model.tracks
 
@@ -301,21 +336,37 @@ mainContent model =
   , div [class "recommendation-list"] [
     trackOptions model
     ,if model.recsLoading == True then
-      showLoader model
+      div [] [
+        p [] [text "Searching For Recommendations"]
+        , showLoader model
+      ]
     else
       viewTracks "Recommendation List" model.recommendations
     ]
   ] 
 
+resetButton : Model -> Html Msg 
+resetButton model =
+  div [class "back-button", hidden(List.isEmpty model.selectedTrack)] [
+        Button.render Mdl [0] Material.model
+          [ Button.raised
+          , Button.colored
+          , Button.ripple
+          , Options.onClick BackSearch
+        ]
+        [ text "Back To Track Search" ]
+    ]
 header : Model -> Html Msg
 header model =
-    div [] 
-      [ h1 [] [text "CRATE DIGGER"] ]
+    Options.styled Html.h2
+      [ Typo.display4 ]
+      [ text "Crate Digger" ]
 
 view : Model -> Html Msg
 view model =
     div []
-        [ header model
+        [ resetButton model
+        , header model
         , mainContent model
         ]
 
@@ -364,7 +415,7 @@ sliderValue : Maybe a -> String
 sliderValue maybeNum =
   case maybeNum of                  
     Nothing ->                              
-      "Nothing Set"
+      "not set"
     Just val ->                             
       toString val
  

@@ -1,32 +1,77 @@
 @import 'bourbon/bourbon';                                                                                     
 @import 'base/base';                                                                                            
 @import 'neat/neat'; 
-
- 		
-$pink: #ffc0cb;	
-$green: #cbffc0; 	
-$purple: #c0cbff;
+		
+$magenta: #490A3D;
+$pink: #BD1550;
+$orange: #E97F02;
+$yellow: #F8CA00;
+$lime: #8A9B0F;
 
 .cards {
   @include grid-container;
 }
 
+.track-list {
+  @include grid-column(10);
+}
+
 .trackbox {
   @include grid-column(3);
   float:left;
+  margin-bottom: 35px;
 
   .mdl-card {
     @include grid-column(10);
-    border: 1px solid grey;
+    border: 2px solid grey;
+    border-radius: 10px;
   }
-  .mdl-card__title.pink {
-    background-color: $pink;
-  }
-  .mdl-card__title.green {
-    background-color: $green;
+
+  .mdl-card__subtitle-text {
+    min-height: 85px;
   }
 }
 
+.trackbox:nth-child(1n) .mdl-card {
+  background-color: $lime;
+}
+.trackbox:nth-child(2n) .mdl-card {
+  background-color: $orange;
+}
+.trackbox:nth-child(3n) .mdl-card {
+  background-color: $pink;
+}
+.trackbox:nth-child(4n) .mdl-card {
+  background-color: $yellow;
+}
+
+.sliders {
+  .mdl-button {
+     margin: 10px;
+  }
+}
 .slider {
   @include grid-column(2);
+  padding: 10px;
+}
+
+.selected-track-box {
+  img {
+    @include grid-column(3);
+    float: right;
+  }
+}
+.selected-track {
+  .mdl-button {
+    @include grid-column(2);
+    float: right;
+    clear: both;
+  }
+}
+.search-bar {
+  @include grid-column(8);
+
+  .mdl-button {
+    float: right;
+  }
 }
