@@ -3,13 +3,15 @@ class Api::V1::SearchController < ApplicationController
   def query
     query = URI.encode(search_params['query'])
     render json: 'Must pass a query' unless query
-    tracks = SpotifySearcher.find_tracks(query: query)
+    limit = search_params[:limit]
+    tracks = SpotifySearcher.find_tracks(query: query, limit: limit)
     render json: map_tracks(tracks)
   end
 
   def get_recs
     id = search_params[:id]
-    tracks = SpotifySearcher.find_recommendations(id: id, options: option_params.to_h)
+    limit = search_params[:limit]
+    tracks = SpotifySearcher.find_recommendations(id: id, options: option_params.to_h, limit: limit)
     render json: map_tracks(tracks)
   end 
 
@@ -28,7 +30,7 @@ class Api::V1::SearchController < ApplicationController
   end
 
   def search_params
-    params.permit(:query, :id)
+    params.permit(:query, :id, :limit)
   end
 
   def option_params

@@ -8,6 +8,11 @@ import Json.Decode as Decode exposing (Decoder, field, at)
 import Material
 import Material.Slider as Slider
 import Material.Progress as Loading
+import Material.Card as Card
+import Material.Options as Options exposing (cs, css)
+import Material.Color as Color
+import Material.Elevation as Elevation
+import Material.Button as Button
 
 import Dict exposing (Dict)
 
@@ -38,6 +43,7 @@ type alias Model =
   , tracks : List Track
   , recommendations: List Track
   , selectedTrack : List Track
+  , showOptions : Bool
   , options: Dict String Float
   , mdl: Material.Model,
     tracksLoading: Bool,
@@ -50,6 +56,7 @@ initialModel =
       tracks = [],
       recommendations = [],
       selectedTrack = [],
+      showOptions = False,
       options = Dict.empty,
       mdl = Material.model,
       tracksLoading = False,
@@ -81,7 +88,7 @@ update msg model =
     UpdateQuery string ->
       ( { model | query = string }, Cmd.none )
     Search ->
-      ( { model | tracksLoading = True, options = Dict.empty }, searchForTracks model.query)
+      ( { model | selectedTrack = [], tracks = [], recommendations = [], tracksLoading = True, showOptions = False, options = Dict.empty }, searchForTracks model.query)
     FilterSearch ->
       let
         track = fromJust(List.head model.selectedTrack)
@@ -99,7 +106,7 @@ update msg model =
     GetRecommendations track ->
       ( { model | recsLoading = True, tracks = [], recommendations = [], selectedTrack = [track] }, searchForRecs track.spotifyId model.options )
     NewRecommendations (Ok newRecs) ->
-      ( { model | recsLoading = False, recommendations = newRecs }, Cmd.none )
+      ( { model | recsLoading = False, showOptions = True, recommendations = newRecs }, Cmd.none )
     NewRecommendations (Err error) ->
       let
         _ = Debug.log "Oops" error
@@ -126,7 +133,7 @@ searchForRecs id options =
 searchForTracks : String -> Cmd Msg
 searchForTracks query =
     let
-      url = "/api/v1/track_search?query=" ++ query
+      url = "/api/v1/track_search?limit=4&query=" ++ query
     in
       Decode.list trackDecoder
         |> Http.get url
@@ -165,71 +172,112 @@ audiobox string =
             []
           ]
         ]
-    
+
 trackBox : Track -> Html Msg
 trackBox track =
   case track.imageUrl of 
     Nothing ->
       div [ class "trackbox"] [ text "no image" ]
     Just url ->
-      div [ class "card trackbox" ]
-        [ div [ class "card-image", onClick (GetRecommendations track) ]
-            [ img [ alt "", src url ]
-                []
+      let 
+        backgroundUrl = "url('" ++ url ++ "') center / cover"
+      in
+      div  [ class "trackbox"] [
+        Card.view 
+          [Color.background (Color.color Color.Green Color.S500)
+          , Options.onClick(GetRecommendations track)] 
+          [
+            Card.media [  css "background" backgroundUrl
+                        , css "height" "200px"] []
+            ,Card.title [] [ 
+              Card.head [ ] [ text track.artist ] 
+              ,Card.subhead [ ] [text track.title, br [] [], text track.album ]
             ]
-        , div [ class "card-header" ]
-            [ text track.title ]
-        , div [ class "card-copy" ]
-            [ p []
-                [ text track.artist, br [] [], text track.album ]
-            ]
-        , audiobox track.previewUrl
-        ]
+          , Card.menu [] [
+            div [] [audiobox track.previewUrl]
+        ]   ]
+      ] 
 
 viewTracks : String -> List Track -> Html Msg
 viewTracks header tracks =
     div [hidden (List.isEmpty tracks)] [ 
       br [] []
-      , hr [] []
       , h1 [] [text header]
       , div [class "cards"] (List.map trackBox tracks)
     ]
 
-createSlider: Float -> Float -> Float -> String -> Model -> Html Msg
-createSlider min_slider max_slider default_slider slider_name model =
+createSlider: Float -> Float -> Float -> Float -> String -> Model -> Html Msg
+createSlider min_slider max_slider default_slider step attribute model =
   Slider.view
-    [ Slider.onChange (Slider slider_name)
-    , Slider.value (getDef slider_name default_slider model.options)
+    [ Slider.onChange (Slider attribute)
+    , Slider.value (getDef attribute default_slider model.options)
     , Slider.max max_slider
     , Slider.min min_slider
-    , Slider.step ((max_slider - min_slider) / 10)
+    , Slider.step step
   ]
 
-showSlider: Float -> Float -> Float -> String -> Model -> Html Msg
-showSlider min_slider max_slider default_slider slider_name model =
+showKey: Maybe Float -> String 
+showKey maybefloat =
+  case maybefloat of 
+    Nothing -> "None Set"
+    Just val ->
+      case val of 
+        -1 -> "None set"
+        0 -> "c"
+        1 -> "C♯"
+        2 -> "D"
+        3 -> "D♯"
+        4 -> "E"
+        5 -> "F"
+        6 ->  "F♯"
+        7 ->  "G"
+        8 ->  "G♯"
+        9 ->  "A"
+        10 -> "B♭"
+        11 -> "B"
+        _ -> "Nothing Set"
+
+showSlider: Float -> Float -> Float -> Float -> String -> String -> Model -> Html Msg
+showSlider min_slider max_slider default_slider step attribute label model =
   div [class "slider"] [
-        createSlider min_slider max_slider default_slider slider_name model,
-        p [] [text(slider_name ++ ": " ++ sliderValue(Dict.get slider_name model.options))]
+        createSlider min_slider max_slider default_slider step attribute model,
+        p [] [text(label ++ ": " ++ sliderValue(Dict.get attribute model.options))]
         ]
     
 trackOptions: Model -> Html Msg
 trackOptions model =
-  div [hidden (List.isEmpty model.recommendations)] [
-    button [onClick FilterSearch] [text "Search with Filters"],
-    button [onClick ResetOptions] [text "Reset Filters"],
-    div [class "sliders"] [
-      showSlider 0 1 0.5 "target_acousticness" model,
-      showSlider 0 1 0.5 "target_energy" model,
-      showSlider 0 1 0.5 "target_instrumentalness" model,
-      showSlider 0 1 0.5 "target_liveness" model,
-      showSlider 0 1 0.5 "target_loudness" model,
-      showSlider 0 1 0.5 "target_speechiness" model,
-      showSlider 0 100 50 "target_popularity" model,
-      showSlider 0 1 0.5 "target_speechiness" model,
-      showSlider 0 200 50 "min_tempo" model,
-      showSlider 0 200 50 "max_tempo" model,
-      showSlider 0 1 0.5 "min_valence" model,
-      showSlider 0 1 0.5 "max_valence" model
+  Options.div[ Elevation.e4, Options.center ] [
+    div [hidden (not model.showOptions)] [
+      div [class "sliders"] [
+        showSlider 0 1 0.5 0.1 "target_acousticness" "target acousticness" model,
+        showSlider 0 1 0.5 0.1 "target_energy" "target energy" model,
+        showSlider 0 1 0.5 0.1 "target_instrumentalness" "instrumentalness" model,
+        showSlider 0 1 0.5 0.1 "target_liveness" "likely to be live" model,
+        showSlider 0 1 0.5 0.1 "target_loudness" "loudness" model,
+        showSlider 0 1 0.5 0.1 "target_speechiness" "speechiness" model,
+        showSlider 0 100 50 10 "target_popularity" "popularity" model,
+        showSlider 0 1 0.5 0.1 "target_danceability" "danceability" model,
+        showSlider 0 200 100 1 "min_tempo" "min tempo (BPM)" model,
+        showSlider 0 200 140 1 "max_tempo" "max tempo (BPM)" model,
+        showSlider 0 1 0.5 0.1 "min_valence" "min valence 0-sad, 1-happy)" model,
+        showSlider 0 1 0.5 0.1 "max_valence" "max valence (0-sad, 1-happy)" model,
+        div [class "slider"] [
+            createSlider -1 11 -1 1 "target_key" model,
+            p [] [text("key" ++ ": " ++ showKey(Dict.get "target_key" model.options))]
+        ],
+      Button.render Mdl [0] model.mdl
+        [ Button.raised
+        , Button.colored
+        , Options.onClick FilterSearch
+      ]
+      [ text "Search With Filters" ],
+      Button.render Mdl [1] model.mdl
+        [ Button.raised
+        , Button.colored
+        , Options.onClick ResetOptions
+      ]
+      [ text "Reset Options" ]
+      ]
     ]
   ]
 showLoader: Model -> Html Msg
@@ -238,20 +286,26 @@ showLoader model =
 
 mainContent: Model -> Html Msg
 mainContent model =
-  div []
-    [ input [ placeholder "Search For Tracks", onInput UpdateQuery ] []
+  div [] [ div [class "search-bar"] [
+    input [ placeholder "Search For Tracks", onInput UpdateQuery ] []
     , button [onClick Search] [text "Search Tracks"]
-    , showSelectedTrack model
-    , if model.tracksLoading == True then
+  ]
+  , div [class "selected-track"] [ showSelectedTrack model ]
+  , div [class "track-list"] [
+    if model.tracksLoading == True then
       showLoader model
     else
       viewTracks "Track List" model.tracks
-    , trackOptions model
-    , if model.recsLoading == True then
+
+    ]
+  , div [class "recommendation-list"] [
+    trackOptions model
+    ,if model.recsLoading == True then
       showLoader model
     else
       viewTracks "Recommendation List" model.recommendations
     ]
+  ] 
 
 header : Model -> Html Msg
 header model =
