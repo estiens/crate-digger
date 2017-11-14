@@ -15,7 +15,23 @@ class Api::V1::SearchController < ApplicationController
     render json: map_tracks(tracks)
   end 
 
+  def get_features
+    id = search_params[:id]
+    features = SpotifySearcher.find_features(id: id)
+    render json: map_features(features)
+  end
+
   private 
+
+  def map_features(features)
+    hash = {}
+    return hash unless features.present? 
+    keys = ['acousticness', 'danceability', 'duration_ms', 'energy',
+    'instrumentalness', 'key', 'liveness', 'loudness', 'mode',
+    'speechiness', 'tempo', 'time_signature', 'valence' ]
+    keys.each { |key| hash[key] = features.send(key) }
+    [hash]
+  end
 
   def map_tracks(tracks)
     array = []

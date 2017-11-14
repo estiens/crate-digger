@@ -12,6 +12,30 @@ $lime: #8A9B0F;
   padding: 25px;
 }
 
+.acoustic-info-box {
+  background: $lime;
+  border: 1px dotted black;
+  border-radius: 5px;
+  height: 210px;
+}
+
+.acoustic-info-box li {
+  float: left;
+  display: inline;
+}
+
+.selected-track-info-box h2 {
+  font-size: 2.2em;
+  padding-top: 0.5em;
+}
+
+.selected-track-info-box img {
+  width: 15em;
+  margin-left: 15px;
+  float: right;
+}
+
+
 .trackbox {
   float:left;
   margin-bottom: 35px;
@@ -20,7 +44,7 @@ $lime: #8A9B0F;
     width: 300px;
     min-height: 400px;
     margin: 10px;
-    border: 2px solid grey;
+    border: 2px dotted grey;
     border-radius: 10px;
     -webkit-transition: all 200ms ease-in;
     -webkit-transform: scale(1); 
@@ -91,12 +115,6 @@ float: left;
 .selected-track-box {
   float: right;
   width: 50em;
-
-  img {
-    width: 15em;
-    margin-left: 15px;
-    float: right;
-  }
 }
 .selected-track {
   .mdl-button {

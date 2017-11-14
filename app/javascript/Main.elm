@@ -5,6 +5,7 @@ import Html.Events exposing (..)
 import Html.Events.Extra as Extra
 import HttpBuilder exposing (..)
 import Json.Decode as Decode exposing (Decoder, field, at)
+import Json.Decode.Pipeline exposing (required, decode)
 import Time
 
 import Material
@@ -12,9 +13,9 @@ import Material.Slider as Slider
 import Material.Progress as Loading
 import Material.Card as Card
 import Material.Options as Options exposing (cs, css)
-import Material.Elevation as Elevation
 import Material.Button as Button
 import Material.Typography as Typo
+import Material.List as Lists
 
 import Dict exposing (Dict)
 
@@ -30,6 +31,22 @@ main =
 
 
 -- MODEL
+
+type alias TrackInfo =
+    { acousticness: Float
+    , danceability: Float
+    , duration_ms: Int
+    , energy: Float
+    , instrumentalness: Float
+    , key: Int
+    , liveness: Float
+    , loudness: Float
+    , mode: Int
+    , speechiness: Float
+    , tempo: Float
+    , time_signature: Int
+    , valence: Float 
+    }
 
 type alias Track =
     { title: String 
@@ -50,7 +67,8 @@ type alias Model =
   , options: Dict String Float
   , mdl: Material.Model,
     tracksLoading: Bool,
-    recsLoading: Bool
+    recsLoading: Bool,
+    currentTrackInfo: List TrackInfo
   }
 
 initialModel : Model
@@ -64,7 +82,8 @@ initialModel =
       options = Dict.empty,
       mdl = Material.model,
       tracksLoading = False,
-      recsLoading = False
+      recsLoading = False,
+      currentTrackInfo = []
     }
 
 -- UPDATE
@@ -80,6 +99,7 @@ type Msg
   | FilterSearch
   | UpdateQuery String
   | BackSearch
+  | NewTrackInfo (Result Http.Error (List TrackInfo))
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -111,10 +131,18 @@ update msg model =
       in
         (model, Cmd.none)
     GetRecommendations track ->
-      ( { model | recsLoading = True, oldTracks = model.tracks, tracks = [], recommendations = [], selectedTrack = [track] }, searchForRecs track.spotifyId model.options )
+      ( { model | recsLoading = True, oldTracks = model.tracks, tracks = [], recommendations = [], selectedTrack = [track] }, 
+      Cmd.batch [ searchForRecs track.spotifyId model.options, getTrackInfo track.spotifyId] )
     NewRecommendations (Ok newRecs) ->
       ( { model | recsLoading = False, showOptions = True, recommendations = newRecs }, Cmd.none )
     NewRecommendations (Err error) ->
+      let
+        _ = Debug.log "Oops" error
+      in
+        (model, Cmd.none)
+    NewTrackInfo (Ok newInfo) ->
+      ( { model | currentTrackInfo = newInfo }, Cmd.none )
+    NewTrackInfo (Err error) ->
       let
         _ = Debug.log "Oops" error
       in
@@ -138,6 +166,16 @@ searchForRecs id options =
         |> withExpect (Http.expectJson tracksDecoder)
         |> send NewRecommendations
 
+getTrackInfo : String -> Cmd Msg 
+getTrackInfo id =
+  let 
+    url = "/api/v1/features?id=" ++ id 
+  in 
+    HttpBuilder.get url
+      |> withTimeout (10 * Time.second)
+      |> withExpect (Http.expectJson infosDecoder)
+      |> send NewTrackInfo
+
 searchForTracks : String -> Cmd Msg
 searchForTracks query =
     let
@@ -152,30 +190,101 @@ searchForTracks query =
 
 type alias Mdl = Material.Model
 
-selectedTrack : Track -> Html Msg 
+selectedTrack : Maybe Track -> Html Msg 
 selectedTrack track = 
-  let 
-    trackString = "Selected Track: " ++ track.title ++ " by " ++ track.artist
-  in
-    div [class "selected-track-box"] [
-      case track.imageUrl of 
-        Nothing -> img [] []
-        Just val -> img [src (val)] []
-      , Options.styled Html.h4
-      [ Typo.title, Typo.right ]
-      [ text trackString ]
-    ]
+  case track of
+    Nothing -> div [class "selected-track-box"] []
+    Just track ->
+      let 
+        trackString = track.title ++ " by " ++ track.artist
+      in
+        div [class "selected-track-box"] [
+          case track.imageUrl of 
+            Nothing -> img [] []
+            Just val -> 
+              div [class "selected-track-info-box"] [
+                 img [src (val)] []
+               , h2 [] [text trackString]
+              ]
+        ]
 
 showSelectedTrack : Model -> Html Msg 
 showSelectedTrack model =
   let 
     track = List.head model.selectedTrack
+    info = List.head model.currentTrackInfo
   in
-    case track of 
-      Nothing ->
-        div [] []
-      Just val ->
-        selectedTrack(fromJust(track))
+    div [] [selectedTrack track, trackInfo info]
+
+trackInfo : Maybe TrackInfo -> Html Msg 
+trackInfo info = 
+  case info of 
+    Nothing -> div [class "acoustic-info-box"] []
+    Just info ->
+      div [class "acoustic-info-box"] [
+        Lists.ul []
+        [ Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+            [ text "Acousticness"
+              , Lists.subtitle [] [ text(toString info.acousticness) ]
+            ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Danceability"
+                , Lists.subtitle [] [ text(toString info.danceability) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Loudness (db)"
+              , Lists.subtitle [] [ text(toString info.loudness) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Liveness"
+              , Lists.subtitle [] [ text(toString info.liveness) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Energy"
+              , Lists.subtitle [] [ text(toString info.energy) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Instrumentalness"
+              , Lists.subtitle [] [ text(toString info.instrumentalness) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Speechiness"
+              , Lists.subtitle [] [ text(toString info.speechiness) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text "Mood (0 = sad, 1 = happy)"
+              , Lists.subtitle [] [ text(toString info.valence) ]
+              ]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text("Key " ++ mapKey(toFloat(info.key)))]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text("Tempo (BPM): " ++ toString(info.tempo))]
+          ]
+        , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text("Time Signature: " ++ toString(info.time_signature))]
+          ]
+        ]
+      ]
 
 audiobox : Maybe String -> Html Msg 
 audiobox string =
@@ -234,26 +343,29 @@ createSlider min_slider max_slider default_slider step attribute model =
     , Slider.step step
   ]
 
+mapKey : Float -> String 
+mapKey float = 
+  case float of 
+    -1 -> "None set"
+    0 -> "C"
+    1 -> "C♯"
+    2 -> "D"
+    3 -> "D♯"
+    4 -> "E"
+    5 -> "F"
+    6 ->  "F♯"
+    7 ->  "G"
+    8 ->  "G♯"
+    9 ->  "A"
+    10 -> "B♭"
+    11 -> "B"
+    _ -> "Nothing Set"
+
 showKey: Maybe Float -> String 
 showKey maybefloat =
   case maybefloat of 
     Nothing -> "None Set"
-    Just val ->
-      case val of 
-        -1 -> "None set"
-        0 -> "c"
-        1 -> "C♯"
-        2 -> "D"
-        3 -> "D♯"
-        4 -> "E"
-        5 -> "F"
-        6 ->  "F♯"
-        7 ->  "G"
-        8 ->  "G♯"
-        9 ->  "A"
-        10 -> "B♭"
-        11 -> "B"
-        _ -> "Nothing Set"
+    Just val -> mapKey val
 
 showSlider: Float -> Float -> Float -> Float -> String -> String -> Model -> Html Msg
 showSlider min_slider max_slider default_slider step attribute label model =
@@ -282,7 +394,7 @@ trackOptions model =
           showSlider 0 1 0.5 0.1 "target_energy" "target energy" model,
           showSlider 0 1 0.5 0.1 "target_instrumentalness" "instrumentalness" model,
           showSlider 0 1 0.5 0.1 "target_liveness" "likely to be live" model,
-          showSlider 0 1 0.5 0.1 "target_loudness" "loudness" model,
+          showSlider -60 0 -20 1 "target_loudness" "loudness" model,
           showSlider 0 1 0.5 0.1 "target_speechiness" "speechiness" model,
           showSlider 0 100 50 10 "target_popularity" "popularity" model,
           showSlider 0 1 0.5 0.1 "target_danceability" "danceability" model,
@@ -389,6 +501,27 @@ subscriptions model =
   Sub.none
 
 -- DECODERS
+
+infosDecoder : Decode.Decoder (List TrackInfo)
+infosDecoder =
+  Decode.list infoDecoder
+
+infoDecoder : Decoder TrackInfo
+infoDecoder = 
+  decode TrackInfo
+    |> Json.Decode.Pipeline.required "acousticness" Decode.float
+    |> Json.Decode.Pipeline.required "danceability" Decode.float
+    |> Json.Decode.Pipeline.required "duration_ms" Decode.int
+    |> Json.Decode.Pipeline.required "energy" Decode.float
+    |> Json.Decode.Pipeline.required "instrumentalness" Decode.float
+    |> Json.Decode.Pipeline.required "key" Decode.int
+    |> Json.Decode.Pipeline.required "liveness" Decode.float
+    |> Json.Decode.Pipeline.required "loudness" Decode.float
+    |> Json.Decode.Pipeline.required "mode" Decode.int
+    |> Json.Decode.Pipeline.required "speechiness" Decode.float
+    |> Json.Decode.Pipeline.required "tempo" Decode.float
+    |> Json.Decode.Pipeline.required "time_signature" Decode.int
+    |> Json.Decode.Pipeline.required "valence" Decode.float
 
 tracksDecoder : Decode.Decoder (List Track)
 tracksDecoder =
