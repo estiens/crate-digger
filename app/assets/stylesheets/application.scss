@@ -8,21 +8,18 @@ $orange: #E97F02;
 $yellow: #F8CA00;
 $lime: #8A9B0F;
 
-.cards {
-  @include grid-container;
-}
-
-.track-list {
-  @include grid-column(10);
+#main {
+  padding: 25px;
 }
 
 .trackbox {
-  @include grid-column(3);
   float:left;
   margin-bottom: 35px;
 
   .mdl-card {
-    @include grid-column(10);
+    width: 300px;
+    min-height: 400px;
+    margin: 10px;
     border: 2px solid grey;
     border-radius: 10px;
     -webkit-transition: all 200ms ease-in;
@@ -66,31 +63,50 @@ $lime: #8A9B0F;
   background-color: $yellow;
 }
 
-.sliders {
-  .mdl-button {
-     margin: 10px;
-  }
+.option-box {
+  width: 95%;
+  padding-top: 0px;
+  padding-left: 100px;
+  clear: both;
 }
-.slider {
-  @include grid-column(2);
-  padding: 10px;
+
+.sliders {
+  width: 95%;
+}
+
+.sliders .mdl-button {
+  margin: 10px;
+}
+
+.slider { 
+width: 250px;
+padding: 10px;
+float: left;
+}
+
+.recommendation-list {
+  clear: both;
 }
 
 .selected-track-box {
+  float: right;
+  width: 50em;
+
   img {
-    @include grid-column(3);
+    width: 15em;
+    margin-left: 15px;
     float: right;
   }
 }
 .selected-track {
   .mdl-button {
-    @include grid-column(2);
+    width: 2em;
     float: right;
     clear: both;
   }
 }
 .search-bar {
-  @include grid-column(8);
+  width : 60em;
 
   .mdl-button {
     float: right;

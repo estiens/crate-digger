@@ -184,7 +184,7 @@ audiobox string =
       div [] []
     Just url ->
     div [ class "card-audio"]
-        [ video [ attribute "controls" "", width 150, name "media" ]
+        [ video [ attribute "controls" "", attribute "controlsList" "nodownload", width 150, name "media" ]
           [ source [ src url, type_ "audio/mpeg" ]
             []
           ]
@@ -272,26 +272,27 @@ showSlider min_slider max_slider default_slider step attribute label model =
     
 trackOptions: Model -> Html Msg
 trackOptions model =
-  Options.div[ Elevation.e4, Options.center ] [
-    div [hidden (not model.showOptions)] [
+  div [hidden (not model.showOptions)] [
       div [class "sliders"] [
         Options.styled p
           [ Typo.display1, Typo.center ]
-          [ text "Select You Some Magic Filters" ],
-        showSlider 0 1 0.5 0.1 "target_acousticness" "target acousticness" model,
-        showSlider 0 1 0.5 0.1 "target_energy" "target energy" model,
-        showSlider 0 1 0.5 0.1 "target_instrumentalness" "instrumentalness" model,
-        showSlider 0 1 0.5 0.1 "target_liveness" "likely to be live" model,
-        showSlider 0 1 0.5 0.1 "target_loudness" "loudness" model,
-        showSlider 0 1 0.5 0.1 "target_speechiness" "speechiness" model,
-        showSlider 0 100 50 10 "target_popularity" "popularity" model,
-        showSlider 0 1 0.5 0.1 "target_danceability" "danceability" model,
-        showSlider 0 200 100 1 "min_tempo" "min tempo (BPM)" model,
-        showSlider 0 200 140 1 "max_tempo" "max tempo (BPM)" model,
-        showSlider 0 1 0.5 0.1 "min_valence" "min valence 0-sad, 1-happy)" model,
-        showSlider 0 1 0.5 0.1 "max_valence" "max valence (0-sad, 1-happy)" model,
-        showSlider -1 11 -1 1 "target_key" "key" model,
-      Button.render Mdl [0] model.mdl
+          [ text "Select You Some Magic Filters" ]
+        , div [class "row"] [
+          showSlider 0 1 0.5 0.1 "target_acousticness" "target acousticness" model,
+          showSlider 0 1 0.5 0.1 "target_energy" "target energy" model,
+          showSlider 0 1 0.5 0.1 "target_instrumentalness" "instrumentalness" model,
+          showSlider 0 1 0.5 0.1 "target_liveness" "likely to be live" model,
+          showSlider 0 1 0.5 0.1 "target_loudness" "loudness" model,
+          showSlider 0 1 0.5 0.1 "target_speechiness" "speechiness" model,
+          showSlider 0 100 50 10 "target_popularity" "popularity" model,
+          showSlider 0 1 0.5 0.1 "target_danceability" "danceability" model,
+          showSlider 0 200 100 1 "min_tempo" "min tempo (BPM)" model,
+          showSlider 0 200 140 1 "max_tempo" "max tempo (BPM)" model,
+          showSlider 0 1 0.5 0.1 "min_valence" "min valence 0-sad, 1-happy)" model,
+          showSlider 0 1 0.5 0.1 "max_valence" "max valence (0-sad, 1-happy)" model,
+          showSlider -1 11 -1 1 "target_key" "key" model
+        ]
+      , Button.render Mdl [0] model.mdl
         [ Button.raised
         , Button.colored
         , Options.onClick FilterSearch
@@ -305,7 +306,6 @@ trackOptions model =
       [ text "Reset Options" ]
       ]
     ]
-  ]
 showLoader: Model -> Html Msg
 showLoader model =
   Loading.indeterminate
@@ -333,9 +333,9 @@ mainContent model =
       viewTracks "Track List" model.tracks
 
     ]
+  , div [class "option-box"] [trackOptions model]
   , div [class "recommendation-list"] [
-    trackOptions model
-    ,if model.recsLoading == True then
+    if model.recsLoading == True then
       div [] [
         p [] [text "Searching For Recommendations"]
         , showLoader model
