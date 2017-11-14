@@ -73,6 +73,5 @@ class SpotifySearcher
         options[:seed_tracks] = [id]
         options = options.symbolize_keys
         tracks = RSpotify::Recommendations.send(:generate, options).tracks
-        tracks.sort_by { |track| -track.popularity }
     end
 end
