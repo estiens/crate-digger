@@ -44,7 +44,7 @@ $lime: #8A9B0F;
     width: 300px;
     min-height: 400px;
     margin: 10px;
-    border: 2px dotted grey;
+    border: 2px solid grey;
     border-radius: 10px;
     -webkit-transition: all 200ms ease-in;
     -webkit-transform: scale(1); 
@@ -60,13 +60,13 @@ $lime: #8A9B0F;
     box-shadow: 0px 0px 150px #000000;
     z-index: 2;
     -webkit-transition: all 200ms ease-in;
-    -webkit-transform: scale(1.5);
+    -webkit-transform: scale(1);
     -ms-transition: all 200ms ease-in;
-    -ms-transform: scale(1.5);   
+    -ms-transform: scale(1);   
     -moz-transition: all 200ms ease-in;
-    -moz-transform: scale(1.5);
+    -moz-transform: scale(1);
     transition: all 200ms ease-in;
-    transform: scale(1.1);
+    transform: scale(1);
   }
 
   .mdl-card__subtitle-text {
@@ -215,4 +215,17 @@ float: left;
 
 .fadeOutRightBig {
   animation-name: fadeOutRightBig;
+}
+
+.mdl-card__actions .material-icons {
+  float: right;
+  margin: 10px;
+}
+
+.mdl-card__actions .material-icons:hover {
+  opacity: 0.5
+}
+
+.mdl-card__actions a {
+  color: black;
 }

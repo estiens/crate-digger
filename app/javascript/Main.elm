@@ -60,6 +60,7 @@ type alias Track =
     , album : String
     , imageUrl : Maybe String
     , previewUrl : Maybe String
+    , uri : String
     }
 
 type alias Model =
@@ -345,12 +346,12 @@ trackBox : Track -> Html Msg
 trackBox track =
   case track.imageUrl of 
     Nothing ->
-      div [ class "trackbox"] [ text "no image" ]
+      div [ class "trackbox masonry-item"] [ text "no image" ]
     Just url ->
       let 
         backgroundUrl = "url('" ++ url ++ "') center / cover"
       in
-      div  [ class "trackbox"] [
+      div  [ class "trackbox masonry-item"] [
         Card.view 
           [ Options.onClick(GetRecommendations track) ] 
           [
@@ -365,7 +366,9 @@ trackBox track =
           ]
           , Card.actions
             [ ]
-            [ div [onClick(AddToCrate track)] [ Icon.i "favorite_border" ] ]
+            [  div [onClick(AddToCrate track)] [ Icon.i "favorite_border" ] 
+              , a [href track.uri] [Icon.i "play_arrow" ] 
+            ]
           ]
       ] 
 
@@ -481,13 +484,13 @@ mainContent model =
       [ text "Search Tracks" ]
   ]
   , div [class "selected-track", hidden(List.isEmpty model.selectedTrack)] [ showSelectedTrack model ]
-  , div [class "crate-list"] [
+  , div [class "crate-list masonry"] [
     if model.showCrate == False then
       div [] []
     else
       viewTracks "Your Crate" model.crate
     ]
-  , div [class "track-list"] [
+  , div [class "track-list masonry"] [
     if model.tracksLoading == True then
       div [] [
         p [] [text "Searching For Your Track"]
@@ -528,7 +531,7 @@ crateButton : Model -> Html Msg
 crateButton model =
   let buttonText =
     if model.showCrate == True then "Hide Crate"
-    else "View My Crate"
+    else "View My Crate (" ++ toString(List.length model.crate) ++ ")"
   in 
     div [class "create-button", hidden(List.isEmpty model.crate)] [
           Button.render Mdl [0] Material.model
@@ -601,13 +604,14 @@ tracksDecoder =
 
 trackDecoder : Decoder Track 
 trackDecoder =
-  Decode.map6 Track
+  Decode.map7 Track
     (field  "title" Decode.string)
     (field  "spotifyId" Decode.string)
     (field  "artist" Decode.string)
     (field  "album" Decode.string)
     (Decode.maybe <| Decode.field "imageUrl" Decode.string)
     (Decode.maybe <| Decode.field "previewUrl" Decode.string)
+    (field  "uri" Decode.string)
 
 -- HELPERS
 

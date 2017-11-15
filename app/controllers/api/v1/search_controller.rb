@@ -42,7 +42,8 @@ class Api::V1::SearchController < ApplicationController
                       artist: t.artists.first.name,
                       album: t.album.name,
                       imageUrl: t.album&.images&.first.try(:dig, 'url'),
-                      previewUrl: t.preview_url } }
+                      previewUrl: t.preview_url,
+                      uri: t.uri } }
   end
 
   def search_params
