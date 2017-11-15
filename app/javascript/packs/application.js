@@ -14,9 +14,13 @@ window.addEventListener("play", function (evt) {
     window.$_currentlyPlaying = evt.target;
 }, true);
 
-var elem = document.querySelector('.masonry');
-var msnry = new Masonry(elem, {
-    // options
-    itemSelector: '.masonry-item',
-    columnWidth: 200
+document.addEventListener("DOMContentLoaded", function () {
+    var elem = document.querySelector('.masonry');
+    var msnry = new Masonry(elem, {
+        // options
+        itemSelector: '.masonry-item',
+        columnWidth: 200
+    });
 });
+
+
