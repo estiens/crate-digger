@@ -169,7 +169,7 @@ update msg model =
     ToggleCrate  ->
       ( { model | showCrate = not model.showCrate }, Cmd.none)
     GetRecommendations track ->
-      ( { model | recsLoading = True, oldTracks = model.tracks, tracks = [], recommendations = [], selectedTrack = [track] }, 
+      ( { model | recsLoading = True, currentTrackInfo = [], oldTracks = model.tracks, tracks = [], recommendations = [], selectedTrack = [track] }, 
       Cmd.batch [ searchForRecs track.spotifyId model.options, getTrackInfo track.spotifyId] )
     NewRecommendations (Ok newRecs) ->
       ( { model | recsLoading = False, showOptions = True, recommendations = newRecs }, Cmd.none )
