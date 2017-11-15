@@ -70,7 +70,7 @@ class SpotifySearcher
 
     def self.find_features(id:)
         RSpotify.authenticate(ENV['RSPOTIFY_TOKEN'], ENV['RSPOTIFY_PASSWORD'])
-        RSpotify::Track.find('5dVtj4IAnYSrI3jVfIFIaC').audio_features
+        RSpotify::Track.find(id).audio_features
     end
 
     def self.find_recommendations(id:, limit: 10, options: {})
