@@ -16,8 +16,13 @@ import Material.Options as Options exposing (cs, css)
 import Material.Button as Button
 import Material.Typography as Typo
 import Material.List as Lists
+import Material.Icon as Icon
+
+import Toasty 
+import Toasty.Defaults
 
 import Dict exposing (Dict)
+import List.Extra
 
 main : Program Never Model Msg
 main =
@@ -59,32 +64,43 @@ type alias Track =
 
 type alias Model =
   { query : String
+  , crate : List Track
   , tracks : List Track
   , oldTracks : List Track
   , recommendations: List Track
   , selectedTrack : List Track
   , showOptions : Bool
+  , showCrate : Bool
   , options: Dict String Float
-  , mdl: Material.Model,
-    tracksLoading: Bool,
-    recsLoading: Bool,
-    currentTrackInfo: List TrackInfo
+  , mdl: Material.Model
+  , tracksLoading: Bool
+  , recsLoading: Bool
+  , currentTrackInfo: List TrackInfo
+  , toasties : Toasty.Stack Toasty.Defaults.Toast
   }
 
 initialModel : Model
 initialModel =
-    { query = "",
-      tracks = [],
-      oldTracks = [],
-      recommendations = [],
-      selectedTrack = [],
-      showOptions = False,
-      options = Dict.empty,
-      mdl = Material.model,
-      tracksLoading = False,
-      recsLoading = False,
-      currentTrackInfo = []
+    { query = ""
+      , crate = []
+      , tracks = []
+      , oldTracks = []
+      , recommendations = []
+      , selectedTrack = []
+      , showOptions = False
+      , showCrate = False
+      , options = Dict.empty
+      , mdl = Material.model
+      , tracksLoading = False
+      , recsLoading = False
+      , currentTrackInfo = []
+      , toasties = Toasty.initialState
     }
+
+myToastConfig : Toasty.Config Msg
+myToastConfig =
+    Toasty.Defaults.config
+        |> Toasty.delay 3000
 
 -- UPDATE
 
@@ -100,11 +116,31 @@ type Msg
   | UpdateQuery String
   | BackSearch
   | NewTrackInfo (Result Http.Error (List TrackInfo))
+  | AddToCrate Track
+  | DeleteFromCrate String 
+  | ClearCrate
+  | ToastyMsg (Toasty.Msg Toasty.Defaults.Toast)
+  | ToggleCrate
 
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    ToastyMsg subMsg ->
+      Toasty.update myToastConfig ToastyMsg subMsg model
+    AddToCrate track ->
+      let message =
+        track.title ++ " was added to your crate"
+      in
+        ( { model | crate = List.append model.crate [track] }, Cmd.none )
+          |> addToast(Toasty.Defaults.Success "Added" message)
+    DeleteFromCrate string ->
+      let
+          newCrate = List.Extra.dropWhile (\track -> track.spotifyId == string ) model.crate
+      in      
+        ( { model | crate = newCrate }, Cmd.none)
+    ClearCrate ->
+      ( { model | crate = [] }, Cmd.none )
     Slider key value ->
       let
         newOptions = Dict.insert key value model.options
@@ -130,6 +166,8 @@ update msg model =
         _ = Debug.log "Oops" error
       in
         (model, Cmd.none)
+    ToggleCrate  ->
+      ( { model | showCrate = not model.showCrate }, Cmd.none)
     GetRecommendations track ->
       ( { model | recsLoading = True, oldTracks = model.tracks, tracks = [], recommendations = [], selectedTrack = [track] }, 
       Cmd.batch [ searchForRecs track.spotifyId model.options, getTrackInfo track.spotifyId] )
@@ -151,6 +189,10 @@ update msg model =
       Material.update Mdl msg_ model
 
 -- COMMANDS
+
+addToast : Toasty.Defaults.Toast -> ( Model, Cmd Msg ) -> ( Model, Cmd Msg )
+addToast toast ( model, cmd ) =
+  Toasty.addToast myToastConfig ToastyMsg toast ( model, cmd )
 
 searchForRecs : String -> Dict String Float -> Cmd Msg
 searchForRecs id options =
@@ -273,15 +315,15 @@ trackInfo info =
           ]
         , Lists.li [ Lists.withSubtitle ]
           [ Lists.content []
-              [ text("Key " ++ mapKey(toFloat(info.key)))]
-          ]
-        , Lists.li [ Lists.withSubtitle ]
-          [ Lists.content []
               [ text("Tempo (BPM): " ++ toString(info.tempo))]
           ]
         , Lists.li [ Lists.withSubtitle ]
           [ Lists.content []
               [ text("Time Signature: " ++ toString(info.time_signature))]
+          ]
+         , Lists.li [ Lists.withSubtitle ]
+          [ Lists.content []
+              [ text("Key: " ++ mapKey(toFloat(info.key)))]
           ]
         ]
       ]
@@ -320,7 +362,11 @@ trackBox track =
             ]
           , Card.menu [] [
             div [] [audiobox track.previewUrl]
-        ]   ]
+          ]
+          , Card.actions
+            [ ]
+            [ div [onClick(AddToCrate track)] [ Icon.i "favorite_border" ] ]
+          ]
       ] 
 
 viewTracks : String -> List Track -> Html Msg
@@ -435,12 +481,20 @@ mainContent model =
       [ text "Search Tracks" ]
   ]
   , div [class "selected-track", hidden(List.isEmpty model.selectedTrack)] [ showSelectedTrack model ]
+  , div [class "crate-list"] [
+    if model.showCrate == False then
+      div [] []
+    else
+      viewTracks "Your Crate" model.crate
+    ]
   , div [class "track-list"] [
     if model.tracksLoading == True then
       div [] [
         p [] [text "Searching For Your Track"]
         , showLoader model
       ]
+    else if model.showCrate == True then
+      div [] []
     else
       viewTracks "Track List" model.tracks
 
@@ -454,7 +508,8 @@ mainContent model =
       ]
     else
       viewTracks "Recommendation List" model.recommendations
-    ]
+    ] 
+  , Toasty.view myToastConfig Toasty.Defaults.view ToastyMsg model.toasties
   ] 
 
 resetButton : Model -> Html Msg 
@@ -468,6 +523,22 @@ resetButton model =
         ]
         [ text "Back To Track Search" ]
     ]
+
+crateButton : Model -> Html Msg 
+crateButton model =
+  let buttonText =
+    if model.showCrate == True then "Hide Crate"
+    else "View My Crate"
+  in 
+    div [class "create-button", hidden(List.isEmpty model.crate)] [
+          Button.render Mdl [0] Material.model
+            [ Button.raised
+            , Button.colored
+            , Button.ripple
+            , Options.onClick ToggleCrate
+          ]
+          [ text buttonText ]
+      ]
 header : Model -> Html Msg
 header model =
     Options.styled Html.h2
@@ -478,6 +549,7 @@ view : Model -> Html Msg
 view model =
     div []
         [ resetButton model
+        , crateButton model
         , header model
         , mainContent model
         ]
