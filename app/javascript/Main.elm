@@ -542,6 +542,18 @@ crateButton model =
           ]
           [ text buttonText ]
       ]
+
+clearCrateButton : Model -> Html Msg 
+clearCrateButton model =
+  div [class "clear-create-button", hidden(List.isEmpty model.crate)] [
+        Button.render Mdl [0] Material.model
+          [ Button.raised
+          , Button.colored
+          , Button.ripple
+          , Options.onClick ClearCrate
+        ]
+        [ text "Empty Crate"]
+    ]
 header : Model -> Html Msg
 header model =
     Options.styled Html.h2
@@ -551,8 +563,11 @@ header model =
 view : Model -> Html Msg
 view model =
     div []
-        [ resetButton model
-        , crateButton model
+        [ div [class "top-buttons"] [
+          resetButton model
+          , crateButton model 
+          , clearCrateButton model
+        ]
         , header model
         , mainContent model
         ]

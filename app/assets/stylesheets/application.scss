@@ -140,6 +140,7 @@ float: left;
   box-shadow: 0 5px 5px -5px rgba(0, 0, 0, 0.5);
   color: white;
   font-size: 13px;
+  z-index: 99;
 }
 
 .toasty-title {
@@ -228,4 +229,14 @@ float: left;
 
 .mdl-card__actions a {
   color: black;
+}
+
+.top-buttons {
+  display: inline-block;
+  width: 75%;
+}
+
+.top-buttons .mdl-button {
+  float: left;
+  margin: 10px;
 }
