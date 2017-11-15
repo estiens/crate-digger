@@ -558,7 +558,7 @@ header : Model -> Html Msg
 header model =
     Options.styled Html.h2
       [ Typo.display4 ]
-      [ text "Crate Digger" ]
+      [ text "CR8DIGGER" ]
 
 view : Model -> Html Msg
 view model =
