@@ -346,12 +346,12 @@ trackBox : Track -> Html Msg
 trackBox track =
   case track.imageUrl of 
     Nothing ->
-      div [ class "trackbox masonry-item"] [ text "no image" ]
+      div [ class "trackbox"] [ text "no image" ]
     Just url ->
       let 
         backgroundUrl = "url('" ++ url ++ "') center / cover"
       in
-      div  [ class "trackbox masonry-item"] [
+      div  [ class "trackbox"] [
         Card.view 
           [ Options.onClick(GetRecommendations track) ] 
           [
@@ -484,13 +484,13 @@ mainContent model =
       [ text "Search Tracks" ]
   ]
   , div [class "selected-track", hidden(List.isEmpty model.selectedTrack)] [ showSelectedTrack model ]
-  , div [class "crate-list masonry"] [
+  , div [class "crate-list"] [
     if model.showCrate == False then
       div [] []
     else
       viewTracks "Your Crate" model.crate
     ]
-  , div [class "track-list masonry"] [
+  , div [class "track-list"] [
     if model.tracksLoading == True then
       div [] [
         p [] [text "Searching For Your Track"]

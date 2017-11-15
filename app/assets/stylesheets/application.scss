@@ -109,6 +109,8 @@ float: left;
 }
 
 .recommendation-list {
+  z-index: -1;
+  position: relative;
   clear: both;
 }
 
@@ -134,13 +136,15 @@ float: left;
 // TOASTIES 
 
 .toasty-container {
-  padding: 1em;
+  top: 0px;
+  padding: 0.5em;
   border-radius: 5px;
   cursor: pointer;
   box-shadow: 0 5px 5px -5px rgba(0, 0, 0, 0.5);
   color: white;
-  font-size: 13px;
-  z-index: 99;
+  font-size: 1em;
+  position: relative;
+  z-index: 1;
 }
 
 .toasty-title {
