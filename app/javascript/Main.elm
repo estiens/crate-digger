@@ -155,9 +155,13 @@ update msg model =
       ( { model | selectedTrack = [], tracks = [], recommendations = [], tracksLoading = True, showOptions = False, options = Dict.empty }, searchForTracks model.query)
     FilterSearch ->
       let
-        track = fromJust(List.head model.selectedTrack)
+        track = List.head model.selectedTrack
       in
-        ( { model | recsLoading = True, tracks = [], recommendations = [] }, searchForRecs track.spotifyId model.options )
+        case track of
+          Nothing ->
+            ( model, Cmd.none )
+          Just track ->
+            ( { model | recsLoading = True, tracks = [], recommendations = [] }, searchForRecs track.spotifyId model.options )
     ResetOptions ->
       ( { model | options = Dict.empty }, Cmd.none )
     NewTracks (Ok newTracks) ->
@@ -629,11 +633,6 @@ trackDecoder =
     (field  "uri" Decode.string)
 
 -- HELPERS
-
-fromJust : Maybe a -> a
-fromJust x = case x of
-    Just y -> y
-    Nothing -> Debug.crash "error: fromJust Nothing"
 
 sliderValue : Maybe a -> String 
 sliderValue maybeNum =
