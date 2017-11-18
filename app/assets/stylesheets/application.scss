@@ -35,14 +35,13 @@ $lime: #8A9B0F;
   float: right;
 }
 
-
 .trackbox {
   float:left;
   margin-bottom: 35px;
 
   .mdl-card {
     width: 300px;
-    min-height: 400px;
+    height: 400px;
     margin: 10px;
     border: 2px solid grey;
     border-radius: 10px;
@@ -270,7 +269,7 @@ float: left;
   right: -25%;
   width: 55%;
   z-index: 2;
-  margin-top: 5px;
+  margin-top: 20px;
 }
 
 .history-box li {

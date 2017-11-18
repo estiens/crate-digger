@@ -14,8 +14,6 @@ window.addEventListener("play", function (evt) {
     window.$_currentlyPlaying = evt.target;
 }, true);
 
-$('html, body').animate({
-    scrollTop: 0
-}, 'fast');
+
 
 
