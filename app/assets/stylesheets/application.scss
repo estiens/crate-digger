@@ -35,14 +35,13 @@ $lime: #8A9B0F;
   float: right;
 }
 
-
 .trackbox {
   float:left;
   margin-bottom: 35px;
 
   .mdl-card {
     width: 300px;
-    min-height: 400px;
+    height: 400px;
     margin: 10px;
     border: 2px solid grey;
     border-radius: 10px;
@@ -136,7 +135,7 @@ float: left;
 // TOASTIES 
 
 .toasty-container {
-  top: 0px;
+  top: 100px;
   padding: 0.5em;
   border-radius: 5px;
   cursor: pointer;
@@ -243,4 +242,40 @@ float: left;
 .top-buttons .mdl-button {
   float: left;
   margin: 10px;
+}
+
+.selected-track-box {
+  height: 215px;
+}
+
+.spotify-player-button {
+  margin-top: 9px  
+}
+
+.mdl-layout__header {
+  position: fixed;
+  top: 0px;
+  background-color: $magenta!important;
+}
+
+.mdl-layout__content {
+  margin-top: 100px
+}
+
+.history-box {
+  background-color: $magenta;
+  position: fixed;
+  top: 40px;
+  right: -25%;
+  width: 55%;
+  z-index: 2;
+  margin-top: 20px;
+}
+
+.history-box li {
+  color: white;
+}
+
+.history-box li:hover {
+  opacity: 0.5;
 }
