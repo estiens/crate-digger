@@ -632,7 +632,7 @@ mainContent model =
         [ header [ class "mdl-layout__header" ]
             [ div [ class "mdl-layout__header-row" ]
                 [ span [ class "mdl-layout-title" ]
-                    [ text "CRA8digger" ]
+                    [ text "CR8digger" ]
                 , div [ class "mdl-layout-spacer" ]
                     []
                 , nav [ class "mdl-navigation mdl-layout--large-screen-only" ]
