@@ -9,7 +9,7 @@ gem 'rails', '~> 5.1.6'
 
 gem 'pg', '~> 0.18'
 
-gem 'puma', '~> 3.7'
+gem 'puma', '~> 3.12'
 
 gem 'bitters'
 gem 'bourbon'
