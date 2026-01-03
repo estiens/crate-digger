@@ -26,14 +26,14 @@ defmodule CrateDiggerWeb.DiscoverLive do
 
   @impl true
   def handle_event("search", %{"query" => query}, socket) do
-    socket = assign(socket, :loading, true, error: nil)
+    socket = assign(socket, loading: true, error: nil)
     send(self(), {:do_search, query})
     {:noreply, socket}
   end
 
   @impl true
   def handle_event("natural_search", %{"query" => query}, socket) do
-    socket = assign(socket, :loading, true, error: nil, search_mode: :natural)
+    socket = assign(socket, loading: true, error: nil, search_mode: :natural)
     send(self(), {:do_natural_search, query})
     {:noreply, socket}
   end
@@ -43,7 +43,7 @@ defmodule CrateDiggerWeb.DiscoverLive do
     track = Enum.find(socket.assigns.tracks, &(&1.spotify_id == spotify_id))
 
     if track do
-      socket = assign(socket, :selected_track, track, loading: true)
+      socket = assign(socket, selected_track: track, loading: true)
       send(self(), {:load_features, spotify_id})
       {:noreply, socket}
     else
@@ -102,10 +102,10 @@ defmodule CrateDiggerWeb.DiscoverLive do
   def handle_info({:do_search, query}, socket) do
     case Spotify.search_tracks(query, limit: 8) do
       {:ok, tracks} ->
-        {:noreply, assign(socket, :tracks, tracks, loading: false, query: query)}
+        {:noreply, assign(socket, tracks: tracks, loading: false, query: query)}
 
       {:error, reason} ->
-        {:noreply, assign(socket, :loading, false, error: format_error(reason))}
+        {:noreply, assign(socket, loading: false, error: format_error(reason))}
     end
   end
 
@@ -113,10 +113,10 @@ defmodule CrateDiggerWeb.DiscoverLive do
   def handle_info({:do_natural_search, query}, socket) do
     with {:ok, params} <- LLM.parse_music_request(query),
          {:ok, tracks} <- Spotify.get_recommendations(params) do
-      {:noreply, assign(socket, :recommendations, tracks, loading: false, query: query)}
+      {:noreply, assign(socket, recommendations: tracks, loading: false, query: query)}
     else
       {:error, reason} ->
-        {:noreply, assign(socket, :loading, false, error: format_error(reason))}
+        {:noreply, assign(socket, loading: false, error: format_error(reason))}
     end
   end
 
@@ -124,7 +124,7 @@ defmodule CrateDiggerWeb.DiscoverLive do
   def handle_info({:load_features, spotify_id}, socket) do
     case Spotify.get_audio_features(spotify_id) do
       {:ok, features} ->
-        socket = assign(socket, :audio_features, features, loading: false)
+        socket = assign(socket, audio_features: features, loading: false)
 
         # Get AI description in background
         if System.get_env("ANTHROPIC_API_KEY") || System.get_env("OPENAI_API_KEY") do
@@ -134,7 +134,7 @@ defmodule CrateDiggerWeb.DiscoverLive do
         {:noreply, socket}
 
       {:error, reason} ->
-        {:noreply, assign(socket, :loading, false, error: format_error(reason))}
+        {:noreply, assign(socket, loading: false, error: format_error(reason))}
     end
   end
 
@@ -170,10 +170,10 @@ defmodule CrateDiggerWeb.DiscoverLive do
 
     case Spotify.get_recommendations(params) do
       {:ok, tracks} ->
-        {:noreply, assign(socket, :recommendations, tracks, loading: false)}
+        {:noreply, assign(socket, recommendations: tracks, loading: false)}
 
       {:error, reason} ->
-        {:noreply, assign(socket, :loading, false, error: format_error(reason))}
+        {:noreply, assign(socket, loading: false, error: format_error(reason))}
     end
   end
 
@@ -209,7 +209,7 @@ defmodule CrateDiggerWeb.DiscoverLive do
         <div class="flex-none gap-2">
           <button class="btn btn-ghost btn-circle" phx-click="toggle_crate">
             <div class="indicator">
-              <Heroicons.heart class="h-6 w-6" />
+              <.icon name="hero-heart" class="h-6 w-6" />
               <span :if={length(@crate) > 0} class="badge badge-sm badge-primary indicator-item">
                 {length(@crate)}
               </span>
@@ -276,7 +276,7 @@ defmodule CrateDiggerWeb.DiscoverLive do
 
             <!-- Error Display -->
             <div :if={@error} class="alert alert-error mt-4">
-              <Heroicons.exclamation_circle class="h-6 w-6" />
+              <.icon name="hero-exclamation-circle" class="h-6 w-6" />
               <span>{@error}</span>
             </div>
           </div>
@@ -507,7 +507,7 @@ defmodule CrateDiggerWeb.DiscoverLive do
             phx-click="add_to_crate"
             phx-value-id={@track.spotify_id}
           >
-            <Heroicons.heart class="h-4 w-4" solid={@in_crate} />
+            <.icon name={if @in_crate, do: "hero-heart-solid", else: "hero-heart"} class="h-4 w-4" />
           </button>
         </div>
       </div>

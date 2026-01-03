@@ -4,8 +4,6 @@ defmodule CrateDiggerWeb.AffiliateController do
   alias CrateDigger.Affiliate.Click
   alias CrateDigger.Repo
 
-  import Ecto.Query
-
   @doc """
   Handle affiliate link redirects with click tracking.
   """
